@@ -1,7 +1,5 @@
 package de.md5lukas.maven.resolver;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,10 +8,10 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
-import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.util.concurrent.TimeUnit;
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-final class SnapshotResolver {
+public final class SnapshotResolver {
 
     @Nullable
     private static XMLInputFactory xmlInputFactory = null;
@@ -33,10 +31,37 @@ final class SnapshotResolver {
     }
 
     @NotNull
-    public static String resolveSnapshotVersion(Repository repository, Artifact artifact) throws IOException, XMLStreamException {
+    private final SimpleCache<String, String> snapshotVersionCache;
+
+    public SnapshotResolver() {
+        this.snapshotVersionCache = new SimpleCache<>();
+    }
+
+    public void setCacheTTL(long ttl) {
+        snapshotVersionCache.setTtl(ttl);
+    }
+
+    @NotNull
+    public ResolveResult<String> resolveSnapshotVersion(@NotNull Repository repository, @NotNull Artifact artifact) {
+        String id = artifact.getSnapshotVersionId();
+
+        String snapshotVersion = snapshotVersionCache.get(id);
+        if (snapshotVersion != null) {
+            return ResolveResult.success(snapshotVersion);
+        }
+
         XMLEventReader reader = null;
         try {
-            reader = getXMLInputFactory().createXMLEventReader(repository.resolve(artifact.getSnapshotMetadataPath()));
+            HttpURLConnection connection = (HttpURLConnection) repository.createURL(artifact.getSnapshotMetadataPath()).openConnection();
+
+            connection.connect();
+
+            if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+                connection.disconnect();
+                return ResolveResult.notFound();
+            }
+
+            reader = getXMLInputFactory().createXMLEventReader(connection.getInputStream());
 
             String timestamp = null, buildNumber = null;
 
@@ -62,10 +87,18 @@ final class SnapshotResolver {
                 }
             }
 
-            return removeSnapshotSuffix(artifact.getVersion()) + '-' + timestamp + '-' + buildNumber;
+            snapshotVersion = removeSnapshotSuffix(artifact.getVersion()) + '-' + timestamp + '-' + buildNumber;
+            snapshotVersionCache.put(id, snapshotVersion);
+
+            return ResolveResult.success(snapshotVersion);
+        } catch (Exception e) {
+            return ResolveResult.error(e);
         } finally {
             if (reader != null) {
-                reader.close();
+                try {
+                    reader.close();
+                } catch (XMLStreamException ignored) {
+                }
             }
         }
     }
