@@ -9,7 +9,6 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.net.HttpURLConnection;
-import java.util.concurrent.TimeUnit;
 
 public final class SnapshotResolver {
 
@@ -43,7 +42,7 @@ public final class SnapshotResolver {
 
     @NotNull
     public ResolveResult<String> resolveSnapshotVersion(@NotNull Repository repository, @NotNull Artifact artifact) {
-        String id = artifact.getSnapshotVersionId();
+        String id = artifact.getFuzzyId();
 
         String snapshotVersion = snapshotVersionCache.get(id);
         if (snapshotVersion != null) {

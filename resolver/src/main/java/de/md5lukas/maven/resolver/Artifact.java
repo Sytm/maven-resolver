@@ -49,8 +49,12 @@ public final class Artifact {
         return version.toUpperCase(Locale.ROOT).endsWith("-SNAPSHOT");
     }
 
+    public Artifact getChecksumArtifact(@NotNull @NonNull MavenChecksum type) {
+        return new Artifact(groupId, artifactId, version, classifier, extension + '.' + type.getExtensionAppendix());
+    }
+
     @NotNull
-    public String getSnapshotVersionId() {
+    public String getFuzzyId() {
         return groupId + '/' + artifactId + '/' + version;
     }
 
