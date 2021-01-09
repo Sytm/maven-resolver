@@ -85,22 +85,24 @@ public final class DependencyLoader {
         }
     }
 
-    @SneakyThrows(NoSuchAlgorithmException.class)
-    private static String download(File file, URL url) throws IOException {
-        MessageDigest digest = MessageDigest.getInstance("SHA-1");
-        try (InputStream is = new DigestInputStream(url.openStream(), digest);
-             FileOutputStream fos = new FileOutputStream(file)) {
-            fos.getChannel().transferFrom(Channels.newChannel(is), 0, Long.MAX_VALUE);
+    private void configureArtifactResolver() {
+        MavenResolver resolver = clazz.getAnnotation(MavenResolver.class);
+
+        if (resolver == null) {
+            throw new IllegalStateException("The plugin class has no maven resolver annotation");
         }
 
-        return Helpers.bytesToHex(digest.digest());
-    }
+        if (resolver.useMavenCentral()) {
+            this.resolver.addRepository(Repository.MAVEN_CENTRAL);
+        }
+        if (resolver.useSonatype()) {
+            this.resolver.addRepository(Repository.SONATYPE);
+        }
 
-    private void configureArtifactResolver() {
         for (MavenRepository repository : clazz.getAnnotationsByType(MavenRepository.class)) {
             Repository repo = new Repository(repository.name(), repository.url());
-            logger.log(Level.FINE, "Detected annotated repository " + repo.toString());
-            resolver.addRepository(repo);
+            this.logger.log(Level.FINE, "Detected annotated repository " + repo.toString());
+            this.resolver.addRepository(repo);
         }
     }
 
