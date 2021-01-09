@@ -40,13 +40,13 @@ public final class SnapshotResolver {
         snapshotVersionCache.setTtl(ttl);
     }
 
-    @NotNull
-    public ResolveResult<String> resolveSnapshotVersion(@NotNull Repository repository, @NotNull Artifact artifact) {
+    @Nullable
+    public String resolveSnapshotVersion(@NotNull Repository repository, @NotNull Artifact artifact) throws Exception {
         String id = artifact.getFuzzyId();
 
         String snapshotVersion = snapshotVersionCache.get(id);
         if (snapshotVersion != null) {
-            return ResolveResult.success(snapshotVersion);
+            return snapshotVersion;
         }
 
         XMLEventReader reader = null;
@@ -57,7 +57,7 @@ public final class SnapshotResolver {
 
             if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
                 connection.disconnect();
-                return ResolveResult.notFound();
+                return null;
             }
 
             reader = getXMLInputFactory().createXMLEventReader(connection.getInputStream());
@@ -89,9 +89,7 @@ public final class SnapshotResolver {
             snapshotVersion = removeSnapshotSuffix(artifact.getVersion()) + '-' + timestamp + '-' + buildNumber;
             snapshotVersionCache.put(id, snapshotVersion);
 
-            return ResolveResult.success(snapshotVersion);
-        } catch (Exception e) {
-            return ResolveResult.error(e);
+            return snapshotVersion;
         } finally {
             if (reader != null) {
                 try {

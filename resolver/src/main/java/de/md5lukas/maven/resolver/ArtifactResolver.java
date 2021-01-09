@@ -3,11 +3,13 @@ package de.md5lukas.maven.resolver;
 import lombok.NonNull;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -43,10 +45,10 @@ public final class ArtifactResolver {
         snapshotResolver.setCacheTTL(ttl);
     }
 
-    @NotNull
-    public ResolveResult<URL> resolveArtifactURL(@NotNull Artifact artifact) {
+    @Nullable
+    public URL resolveArtifactURL(@NotNull Artifact artifact) throws Exception {
         if (repositories.isEmpty()) {
-            return ResolveResult.notFound();
+            return null;
         }
 
         List<Exception> exceptions = new ArrayList<>();
@@ -54,14 +56,13 @@ public final class ArtifactResolver {
         Repository lastRepository = artifactToRepository.get(artifact.getFuzzyId());
 
         if (lastRepository != null) {
-            ResolveResult<URL> result = resolveArtifactURL(lastRepository, artifact);
-
-            switch (result.getStatus()) {
-                case ERROR:
-                    exceptions.add(result.getException());
-                    break;
-                case SUCCESS:
+            try {
+                URL result = resolveArtifactURL(lastRepository, artifact);
+                if (result != null) {
                     return result;
+                }
+            } catch (Exception e) {
+                exceptions.add(e);
             }
         }
 
@@ -69,91 +70,60 @@ public final class ArtifactResolver {
             if (repository == lastRepository)
                 continue;
 
-            ResolveResult<URL> result = resolveArtifactURL(repository, artifact);
+            try {
+                URL result = resolveArtifactURL(repository, artifact);
 
-            switch (result.getStatus()) {
-                case ERROR:
-                    exceptions.add(result.getException());
-                    break;
-                case SUCCESS:
+                if (result != null) {
                     artifactToRepository.put(artifact.getFuzzyId(), repository);
                     return result;
+                }
+            } catch (Exception e) {
+                exceptions.add(e);
             }
         }
 
         if (exceptions.isEmpty()) {
-            return ResolveResult.notFound();
+            return null;
         } else {
             Exception e = new Exception("An error occurred while trying to resolve an URL for a maven artifact");
             exceptions.forEach(e::addSuppressed);
-            return ResolveResult.error(e);
+            throw e;
         }
     }
 
-    public ResolveResult<String> getChecksum(@NotNull @NonNull Artifact artifact, @NotNull @NonNull MavenChecksum type) {
-        ResolveResult<URL> checksumURL = resolveArtifactURL(artifact);
-
-        switch (checksumURL.getStatus()) {
-            case ERROR:
-                return checksumURL.castError();
-            case NOT_FOUND:
-                return ResolveResult.notFound();
-        }
-
-        URL url = checksumURL.getValue();
-
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream(), StandardCharsets.UTF_8))) {
-            return ResolveResult.success(br.readLine());
-        } catch (IOException e) {
-            return ResolveResult.error(e);
-        }
-    }
-
-    @NotNull
-    private ResolveResult<URL> resolveArtifactURL(@NotNull Repository repository, @NotNull Artifact artifact) {
+    @Nullable
+    private URL resolveArtifactURL(@NotNull Repository repository, @NotNull Artifact artifact) throws Exception {
         URL url;
         if (artifact.isSnapshot()) {
-            ResolveResult<String> snapshotVersion = snapshotResolver.resolveSnapshotVersion(repository, artifact);
-            switch (snapshotVersion.getStatus()) {
-                case NOT_FOUND:
-                    return ResolveResult.notFound();
-                case ERROR:
-                    return snapshotVersion.castError();
+            String snapshotVersion = snapshotResolver.resolveSnapshotVersion(repository, artifact);
+            if (snapshotVersion == null) {
+                return null;
             }
-            url = repository.createURL(artifact.getPath(snapshotVersion.getValue()));
+
+            url = repository.createURL(artifact.getPath(snapshotVersion));
         } else {
             url = repository.createURL(artifact.getPath());
         }
 
         if (checkURLValidity) {
-            ResolveResult<Integer> urlCheck = checkURL(url);
+            boolean urlCheck = checkURL(url);
 
-            switch (urlCheck.getStatus()) {
-                case NOT_FOUND:
-                    return ResolveResult.notFound();
-                case ERROR:
-                    return urlCheck.castError();
+            if (!urlCheck) {
+                return null;
             }
         }
 
-        return ResolveResult.success(url);
+        return url;
     }
 
-    @NotNull
-    private ResolveResult<Integer> checkURL(@NotNull URL url) {
+    private boolean checkURL(@NotNull URL url) throws IOException {
         HttpURLConnection connection = null;
         try {
             connection = (HttpURLConnection) url.openConnection();
 
             connection.setRequestMethod("HEAD");
 
-            if (connection.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                return ResolveResult.success(connection.getResponseCode());
-            } else {
-                return ResolveResult.notFound();
-            }
-        } catch (IOException e) {
-            return ResolveResult.error(e);
+            return connection.getResponseCode() == HttpURLConnection.HTTP_OK;
         } finally {
             if (connection != null) {
                 connection.disconnect();
