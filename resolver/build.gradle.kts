@@ -1,6 +1,6 @@
 plugins {
     java
-    id("io.freefair.lombok") version "5.3.0"
+    id("io.freefair.lombok")
 }
 
 group = "de.md5lukas.maven"

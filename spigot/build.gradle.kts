@@ -1,6 +1,9 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     java
-    id("io.freefair.lombok") version "5.3.0"
+    id("io.freefair.lombok")
+    id("com.github.johnrengelman.shadow")
 }
 
 group = "de.md5lukas.maven"
@@ -29,4 +32,12 @@ java {
 
 tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
+}
+
+tasks.withType<ShadowJar> {
+    archiveClassifier.set("")
+
+    dependencies {
+        include(dependency("de.md5lukas.maven:resolver"))
+    }
 }
