@@ -36,9 +36,9 @@ public final class DependencyLoader {
     private final Map<Artifact, File> artifacts;
 
     @NotNull
-    private MavenChecksum checksumAlgorithm;
+    private final MavenChecksum checksumAlgorithm;
 
-    private boolean ignoreNotFoundChecksum;
+    private final boolean ignoreNotFoundChecksum;
 
     private DependencyLoader(@NotNull Plugin plugin) {
         this.clazz = plugin.getClass();
@@ -55,8 +55,22 @@ public final class DependencyLoader {
             }
         }
 
-        checksumAlgorithm = MavenChecksum.SHA1; // Doing this to fulfill @NotNull, even though it is set in configureArtifactResolver
-        this.configureArtifactResolver();
+        MavenResolver resolverAnnotation = clazz.getAnnotation(MavenResolver.class);
+
+        if (resolverAnnotation == null) {
+            throw new IllegalStateException("The plugin class has no maven resolver annotation");
+        }
+
+        if (resolverAnnotation.useMavenCentral()) {
+            this.resolver.addRepository(Repository.MAVEN_CENTRAL);
+        }
+        if (resolverAnnotation.useSonatype()) {
+            this.resolver.addRepository(Repository.SONATYPE);
+        }
+        this.checksumAlgorithm = resolverAnnotation.checksumAlgorithm();
+        this.ignoreNotFoundChecksum = resolverAnnotation.ignoreNotFoundChecksum();
+
+        this.loadCustomRepositories();
         this.artifacts = this.getArtifacts();
     }
 
@@ -112,22 +126,7 @@ public final class DependencyLoader {
         loadAll();
     }
 
-    private void configureArtifactResolver() {
-        MavenResolver resolverAnnotation = clazz.getAnnotation(MavenResolver.class);
-
-        if (resolverAnnotation == null) {
-            throw new IllegalStateException("The plugin class has no maven resolver annotation");
-        }
-
-        if (resolverAnnotation.useMavenCentral()) {
-            this.resolver.addRepository(Repository.MAVEN_CENTRAL);
-        }
-        if (resolverAnnotation.useSonatype()) {
-            this.resolver.addRepository(Repository.SONATYPE);
-        }
-        this.checksumAlgorithm = resolverAnnotation.checksumAlgorithm();
-        this.ignoreNotFoundChecksum = resolverAnnotation.ignoreNotFoundChecksum();
-
+    private void loadCustomRepositories() {
         for (MavenRepository repository : clazz.getAnnotationsByType(MavenRepository.class)) {
             Repository repo = new Repository(repository.name(), repository.url());
             this.logger.fine("Detected annotated repository " + repo.toString());
