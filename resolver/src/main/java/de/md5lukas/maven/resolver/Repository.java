@@ -11,6 +11,9 @@ import java.net.URL;
 @Getter
 public final class Repository {
 
+    public static final Repository MAVEN_CENTRAL = new Repository("central", "https://repo1.maven.org/maven2/"),
+            SONATYPE = new Repository("sonatype", "https://oss.sonatype.org/content/groups/public/");
+
     @NotNull
     private final String name;
 
