@@ -1,5 +1,7 @@
 package de.md5lukas.maven.resolver;
 
+import de.md5lukas.maven.resolver.cache.SimpleSnapshotCache;
+import de.md5lukas.maven.resolver.cache.SnapshotCache;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,21 +32,17 @@ public final class SnapshotResolver {
     }
 
     @NotNull
-    private final SimpleCache<String, String> snapshotVersionCache;
+    private final SnapshotCache snapshotCache;
 
-    public SnapshotResolver() {
-        this.snapshotVersionCache = new SimpleCache<>();
-    }
-
-    public void setCacheTTL(long ttl) {
-        snapshotVersionCache.setTtl(ttl);
+    public SnapshotResolver(@NotNull SnapshotCache snapshotCache) {
+        this.snapshotCache = snapshotCache;
     }
 
     @Nullable
     public String resolveSnapshotVersion(@NotNull Repository repository, @NotNull Artifact artifact) throws Exception {
         String id = artifact.getFuzzyId();
 
-        String snapshotVersion = snapshotVersionCache.get(id);
+        String snapshotVersion = snapshotCache.get(id);
         if (snapshotVersion != null) {
             return snapshotVersion;
         }
@@ -87,7 +85,7 @@ public final class SnapshotResolver {
             }
 
             snapshotVersion = removeSnapshotSuffix(artifact.getVersion()) + '-' + timestamp + '-' + buildNumber;
-            snapshotVersionCache.put(id, snapshotVersion);
+            snapshotCache.put(id, snapshotVersion);
 
             return snapshotVersion;
         } finally {

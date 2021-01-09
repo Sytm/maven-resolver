@@ -1,5 +1,7 @@
 package de.md5lukas.maven.resolver;
 
+import de.md5lukas.maven.resolver.cache.SimpleSnapshotCache;
+import de.md5lukas.maven.resolver.cache.SnapshotCache;
 import lombok.NonNull;
 import lombok.Setter;
 import org.jetbrains.annotations.NotNull;
@@ -12,6 +14,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public final class ArtifactResolver {
 
@@ -28,17 +31,21 @@ public final class ArtifactResolver {
     private final List<Repository> repositories;
 
     public ArtifactResolver() {
-        this.snapshotResolver = new SnapshotResolver();
+        this(TimeUnit.DAYS.toMillis(1));
+    }
+
+    public ArtifactResolver(long simpleCacheTTL) {
+        this(new SimpleSnapshotCache(simpleCacheTTL));
+    }
+
+    public ArtifactResolver(@NotNull @NonNull SnapshotCache snapshotCache) {
+        this.snapshotResolver = new SnapshotResolver(snapshotCache);
         this.artifactToRepository = new HashMap<>();
         this.repositories = new ArrayList<>();
     }
 
     public void addRepository(@NotNull @NonNull Repository repository) {
         this.repositories.add(repository);
-    }
-
-    public void setSnapshotVersionCacheTTL(long ttl) {
-        snapshotResolver.setCacheTTL(ttl);
     }
 
     @Nullable
