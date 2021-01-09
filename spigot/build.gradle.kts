@@ -1,9 +1,7 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 plugins {
     java
     id("io.freefair.lombok")
-    id("com.github.johnrengelman.shadow")
+    `maven-publish`
 }
 
 group = "de.md5lukas.maven"
@@ -34,10 +32,25 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
-tasks.withType<ShadowJar> {
-    archiveClassifier.set("")
-
-    dependencies {
-        include(dependency("de.md5lukas.maven:resolver"))
+publishing {
+    repositories {
+        maven {
+            val releasesRepoUrl = "https://repo.sytm.de/repository/maven-releases/"
+            val snapshotsRepoUrl = "https://repo.sytm.de/repository/maven-snapshots/"
+            url = uri(if (version.toString().endsWith("SNAPSHOT")) snapshotsRepoUrl else releasesRepoUrl)
+            credentials {
+                if (project.hasProperty("mavenUsername")) {
+                    username = project.properties["mavenUsername"] as String
+                }
+                if (project.hasProperty("mavenPassword")) {
+                    password = project.properties["mavenPassword"] as String
+                }
+            }
+        }
+    }
+    publications {
+        create<MavenPublication>("maven") {
+            from(components["java"])
+        }
     }
 }
