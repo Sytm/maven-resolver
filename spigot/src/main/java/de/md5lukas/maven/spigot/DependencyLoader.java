@@ -14,8 +14,17 @@ import java.net.URL;
 import java.util.*;
 import java.util.logging.Logger;
 
+/**
+ * Class that allows Spigot plugins to load required dependencies and runtime to reduce jar size
+ */
 public final class DependencyLoader {
 
+    /**
+     * Creates a new dependency loader for the given plugin
+     *
+     * @param plugin The plugin to load the dependencies for
+     * @return A new dependency loader
+     */
     public static DependencyLoader forPlugin(@NotNull @NonNull Plugin plugin) {
         return new DependencyLoader(plugin);
     }
@@ -74,7 +83,12 @@ public final class DependencyLoader {
         this.artifacts = this.getArtifacts();
     }
 
-    public void loadAll() throws Exception {
+    /**
+     * Loads all required dependencies and throws an exception if it fails to do that
+     *
+     * @throws Exception If and exception occurred while downloading the dependencies or one could not be found or verified
+     */
+    public void loadAllChecked() throws Exception {
         List<Map.Entry<Artifact, File>> requiredArtifacts = getRequiredArtifacts();
 
         for (Map.Entry<Artifact, File> required : requiredArtifacts) {
@@ -121,9 +135,12 @@ public final class DependencyLoader {
         }
     }
 
+    /**
+     * The same as {@link #loadAllChecked()} but the exception is unchecked
+     */
     @SneakyThrows
-    public void loadAllUnchecked() {
-        loadAll();
+    public void loadAll() {
+        loadAllChecked();
     }
 
     private void loadCustomRepositories() {

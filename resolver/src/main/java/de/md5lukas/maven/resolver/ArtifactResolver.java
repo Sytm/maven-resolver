@@ -16,6 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Class that can resolve the URL of artifacts by searching for them in multiple repositories
+ */
 public final class ArtifactResolver {
 
     @NotNull
@@ -24,30 +27,67 @@ public final class ArtifactResolver {
     @NotNull
     private final Map<String, Repository> artifactToRepository;
 
+    /**
+     * The artifact resolver checks the validity of URLs by sending a HTTP HEAD request and if that returns the status code 200 the url is deemed valid.
+     * <br><br>
+     * This should only be disabled if the artifact resolver has only one repository, because otherwise it could happen that the URL for a non-snapshot artifact
+     * is not present in that repository
+     *
+     * @param checkURLValidity Whether the artifact resolver should check urls are valid or not
+     */
     @Setter
     private boolean checkURLValidity = true;
 
     @NotNull
     private final List<Repository> repositories;
 
+    /**
+     * Creates a new artifact resolver instance using {@link SimpleSnapshotCache} as the cache with a TTL of 1 day
+     */
     public ArtifactResolver() {
         this(TimeUnit.DAYS.toMillis(1));
     }
 
+    /**
+     * Creates a new artifact resolver instance using {@link SimpleSnapshotCache} as the cache
+     *
+     * @param simpleCacheTTL The TTL of the cache
+     */
     public ArtifactResolver(long simpleCacheTTL) {
         this(new SimpleSnapshotCache(simpleCacheTTL));
     }
 
+    /**
+     * Creates a new artifact resolver instance using the provided {@link SnapshotCache} as a cache
+     *
+     * @param snapshotCache The snapshot cache implementation to use
+     */
     public ArtifactResolver(@NotNull @NonNull SnapshotCache snapshotCache) {
         this.snapshotResolver = new SnapshotResolver(snapshotCache);
         this.artifactToRepository = new HashMap<>();
         this.repositories = new ArrayList<>();
     }
 
+    /**
+     * Adds a repository to the artifact resolver where it should look for maven artifacts
+     *
+     * @param repository The repository to add
+     */
     public void addRepository(@NotNull @NonNull Repository repository) {
         this.repositories.add(repository);
     }
 
+    /**
+     * Checks every repository for the artifact and returns a URL if it found one. If none of the repositories have the artifact then <code>null</code> is
+     * returned.
+     * <br><br>
+     * If none of the repositories have the artifact, but while trying to access a repository and exception occurred, a new exception is created and all
+     * other exception are added to that
+     *
+     * @param artifact The artifact to try to resolve
+     * @return The resolved URL or <code>null</code> if it could not be found
+     * @throws Exception If an exception occurred while trying to access the artifact
+     */
     @Nullable
     public URL resolveArtifactURL(@NotNull Artifact artifact) throws Exception {
         if (repositories.isEmpty()) {

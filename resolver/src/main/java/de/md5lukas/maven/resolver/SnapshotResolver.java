@@ -1,6 +1,5 @@
 package de.md5lukas.maven.resolver;
 
-import de.md5lukas.maven.resolver.cache.SimpleSnapshotCache;
 import de.md5lukas.maven.resolver.cache.SnapshotCache;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -12,7 +11,7 @@ import javax.xml.stream.events.StartElement;
 import javax.xml.stream.events.XMLEvent;
 import java.net.HttpURLConnection;
 
-public final class SnapshotResolver {
+final class SnapshotResolver {
 
     @Nullable
     private static XMLInputFactory xmlInputFactory = null;

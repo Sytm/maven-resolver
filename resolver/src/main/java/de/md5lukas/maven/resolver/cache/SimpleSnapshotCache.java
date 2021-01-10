@@ -8,6 +8,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Very basic implementation of the SnapshotCache interface allowing this library to work without any external dependencies
+ */
 public class SimpleSnapshotCache implements SnapshotCache {
 
     private final long ttl;
@@ -15,6 +18,11 @@ public class SimpleSnapshotCache implements SnapshotCache {
     @NotNull
     private final Map<String, CacheEntry> map;
 
+    /**
+     * Creates a new instance of the simple snapshot cache using the provided ttl
+     *
+     * @param ttl The ttl of the cache entries in milliseconds
+     */
     public SimpleSnapshotCache(long ttl) {
         this.ttl = ttl;
         map = new HashMap<>();

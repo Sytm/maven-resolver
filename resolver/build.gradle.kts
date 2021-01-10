@@ -31,6 +31,12 @@ tasks.withType<JavaCompile> {
     options.encoding = "UTF-8"
 }
 
+tasks.withType<Javadoc> {
+    with(options as StandardJavadocDocletOptions) {
+        addStringOption("noqualifier", "all")
+    }
+}
+
 tasks.withType<Test> {
     useJUnitPlatform()
 
