@@ -143,7 +143,8 @@ public final class DependencyLoader {
                     dep.groupId(),
                     dep.artifactId(),
                     dep.version(),
-                    dep.classifier()
+                    dep.classifier(),
+                    dep.type()
             );
             this.logger.fine("Detected annotated artifact " + artifact.toString());
             result.put(artifact, new File(this.libFolder, artifact.getFileName()));

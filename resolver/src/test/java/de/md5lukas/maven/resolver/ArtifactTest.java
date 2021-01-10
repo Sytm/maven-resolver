@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class ArtifactTest {
 
     @Test
-    void defaultExtensionIsJar() {
-        assertEquals("jar", new Artifact("", "", "").getExtension());
+    void defaultTypeIsJar() {
+        assertEquals("jar", new Artifact("", "", "").getType());
     }
 
     @Test

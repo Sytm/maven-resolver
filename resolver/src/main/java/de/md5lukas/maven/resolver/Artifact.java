@@ -23,10 +23,10 @@ public final class Artifact {
     @Nullable
     private final String classifier;
     @NotNull
-    private final String extension;
+    private final String type;
 
     public Artifact(@NotNull @NonNull String groupId, @NotNull @NonNull String artifactId,
-                    @NotNull @NonNull String version, @Nullable String classifier, @NotNull @NonNull String extension) {
+                    @NotNull @NonNull String version, @Nullable String classifier, @NotNull @NonNull String type) {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
@@ -35,7 +35,8 @@ public final class Artifact {
             classifier = null;
         this.classifier = classifier;
 
-        this.extension = extension;
+
+        this.type = type;
     }
 
     public Artifact(@NotNull String groupId, @NotNull String artifactId, @NotNull String version, @Nullable String classifier) {
@@ -51,7 +52,7 @@ public final class Artifact {
     }
 
     public Artifact getChecksumArtifact(@NotNull @NonNull MavenChecksum type) {
-        return new Artifact(groupId, artifactId, version, classifier, extension + '.' + type.getExtensionAppendix());
+        return new Artifact(groupId, artifactId, version, classifier, this.type + '.' + type.getExtensionAppendix());
     }
 
     @NotNull
@@ -112,7 +113,7 @@ public final class Artifact {
             stringBuilder.append('-').append(classifier);
         }
 
-        stringBuilder.append('.').append(extension);
+        stringBuilder.append('.').append(type);
 
         return stringBuilder;
     }
