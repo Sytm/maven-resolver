@@ -1,5 +1,5 @@
 plugins {
-    java
+    `java-library`
     id("io.freefair.lombok")
     `maven-publish`
 }

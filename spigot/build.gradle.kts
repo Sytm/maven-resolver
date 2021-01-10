@@ -1,5 +1,5 @@
 plugins {
-    java
+    `java-library`
     id("io.freefair.lombok")
     `maven-publish`
 }
@@ -15,10 +15,10 @@ repositories {
 }
 
 dependencies {
-    implementation("org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT")
+    api("org.spigotmc:spigot-api:1.13.2-R0.1-SNAPSHOT")
     compileOnly("org.jetbrains:annotations:20.1.0")
 
-    implementation(project(":resolver"))
+    api(project(":resolver"))
 }
 
 java {
